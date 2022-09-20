@@ -24,6 +24,7 @@ stages:
       displayName: Build an image
       inputs:
         command: build
-        dockerfile: '$(Build.SourcesDirectory)/linux/tools.Dockerfile'
+        arguments: -t base_cloudshell
+        dockerfile: '$(Build.SourcesDirectory)/linux/base.Dockerfile'
         tags: |
           $(tag)
