@@ -21,11 +21,20 @@ stages:
       vmImage: ubuntu-latest
     steps:
     - task: Docker@2
-      displayName: Build an image
+      displayName: Build Base image
       inputs:
         command: build
         arguments: -t base_cloudshell 
         buildContext: $(Build.SourcesDirectory)
         dockerfile: '$(Build.SourcesDirectory)/linux/base.Dockerfile'
+        tags: |
+          $(tag)
+    - task: Docker@2
+      displayName: Build Tools image
+      inputs:
+        command: build
+        arguments: -t tools_cloudshell --build-arg IMAGE_LOCATION=base_cloudshell 
+        buildContext: $(Build.SourcesDirectory)
+        dockerfile: '$(Build.SourcesDirectory)/linux/tools.Dockerfile'
         tags: |
           $(tag)
