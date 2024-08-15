@@ -121,7 +121,18 @@ try {
         PowerShellGet\Install-Module -Name SHiPS @prodAllUsers    
         PowerShellGet\Install-Module -Name SQLServer -MaximumVersion $script:dockerfileDataObject.SQLServerModuleMaxVersion @prodAllUsers
         PowerShellGet\Install-Module -Name MicrosoftPowerBIMgmt -MaximumVersion $script:dockerfileDataObject.PowerBIMaxVersion @prodAllUsers
-        PowerShellGet\Install-Module -Name MicrosoftTeams @prodAllUsers           
+        PowerShellGet\Install-Module -Name MicrosoftTeams @prodAllUsers     
+
+        # MS Graph packages
+        PowerShellGet\Install-Module -Name Microsoft.Graph.Authentication @prodAllUsers
+        PowerShellGet\Install-Module -Name Microsoft.Graph.Users.Actions @prodAllUsers
+        PowerShellGet\Install-Module -Name Microsoft.Graph.Users.Functions @prodAllUsers
+        PowerShellGet\Install-Module -Name Microsoft.Graph.Groups @prodAllUsers
+        PowerShellGet\Install-Module -Name Microsoft.Graph.Identity.DirectoryManagement @prodAllUsers
+        PowerShellGet\Install-Module -Name Microsoft.Graph.Identity.Governance @prodAllUsers
+        PowerShellGet\Install-Module -Name Microsoft.Graph.Identity.SignIns @prodAllUsers
+        PowerShellGet\Install-Module -Name Microsoft.Graph.Applications @prodAllUsers
+
     }
     else {
         # update libmi.so
@@ -136,10 +147,9 @@ try {
         Write-Output "Installing modules from production gallery"    
         PowerShellGet\Install-Module -Name AzurePSDrive @prodAllUsers   
         PowerShellGet\Install-Module -Name GuestConfiguration -MaximumVersion $script:dockerfileDataObject.GuestConfigurationMaxVersion -ErrorAction SilentlyContinue @prodAllUsers
-        PowerShellGet\Install-Module -Name Microsoft.PowerShell.UnixCompleters @prodAllUsers
-        PowerShellGet\Install-Module -AllowPreRelease -Force PSReadLine -Repository PSGallery # get psreadline beta
-        PowerShellGet\Install-Module -Name Az.Tools.Predictor -Repository PSGallery
-        PowerShellGet\Install-Module -Name ExchangeOnlineManagement -RequiredVersion 2.0.5 -Force
+        PowerShellGet\Install-Module -Force PSReadLine @prodAllUsers
+        PowerShellGet\Install-Module -Name Az.Tools.Predictor @prodAllUsers
+        PowerShellGet\Install-Module -Name ExchangeOnlineManagement @prodAllUsers
         PowerShellGet\Install-Module -Name Microsoft.PowerShell.SecretManagement @prodAllUsers
         PowerShellGet\Install-Module -Name Microsoft.PowerShell.SecretStore @prodAllUsers
 
@@ -159,10 +169,6 @@ try {
 
         if (Microsoft.PowerShell.Management\Test-Path $tempDirectory) {
             Write-Output ('Temp Directory: {0}' -f $tempDirectory)
-
-            # Install the Exchange modules from the Azure storage
-            Install-PSCloudShellFile -Source $tempDirectory -FileName 'EXOPSSessionConnector.zip' -Destination $modulePath -FileHash $script:dockerfileDataObject.ExoConnectorFileHash
-            Write-Output "Installed Exchange Package."
         }
 
         # Copy the startup script to the all-users profile 

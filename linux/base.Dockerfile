@@ -1,5 +1,5 @@
-# base.Dockerfile contains components which are large and change less frequently. 
-# tools.Dockerfile contains the smaller, more frequently-updated components. 
+# base.Dockerfile contains components which are large and change less frequently.
+# tools.Dockerfile contains the smaller, more frequently-updated components.
 
 # Within Azure, the image layers
 # built from this file are cached in a number of locations to speed up container startup time. A manual
@@ -13,36 +13,24 @@
 # ability to stay current on Linux updates.
 # https://github.com/microsoft/CBL-Mariner
 FROM mcr.microsoft.com/cbl-mariner/base/core:2.0
+LABEL org.opencontainers.image.source="https://github.com/Azure/CloudShell"
 
 SHELL ["/bin/bash","-c"]
-
 COPY linux/tdnfinstall.sh .
 
-RUN tdnf repolist --refresh
-
-RUN tdnf update -y && bash ./tdnfinstall.sh \
-  mariner-repos-extended
-
-RUN tdnf update -y && bash ./tdnfinstall.sh \
+RUN tdnf update -y --refresh && \
+  bash ./tdnfinstall.sh \
+  mariner-repos-extended && \
+  tdnf repolist --refresh && \
+  bash ./tdnfinstall.sh \
+  nodejs18 \
   curl \
   xz \
   git \
   gpgme \
-  gnupg2
-
-# Install nodejs
-RUN tdnf update -y && bash ./tdnfinstall.sh \
-  nodejs
-
-ENV NPM_CONFIG_LOGLEVEL warn
-ENV NODE_VERSION 8.16.0
-ENV NODE_ENV production
-ENV NODE_OPTIONS=--tls-cipher-list='ECDHE-RSA-AES128-GCM-SHA256:!RC4'
-
-RUN tdnf update -y && bash ./tdnfinstall.sh \
+  gnupg2 \
   autoconf \
   ansible \
-# azure-functions-core-tools \
   bash-completion \
   build-essential \
   binutils \
@@ -53,8 +41,8 @@ RUN tdnf update -y && bash ./tdnfinstall.sh \
   curl \
   bind-utils \
   dos2unix \
-  dotnet-runtime-6.0 \
-  dotnet-sdk-6.0 \
+  dotnet-runtime-8.0 \
+  dotnet-sdk-8.0 \
   e2fsprogs \
   emacs \
   gawk \
@@ -65,22 +53,20 @@ RUN tdnf update -y && bash ./tdnfinstall.sh \
   initscripts \
   iptables \
   iputils \
-  msopenjdk-11 \
+  msopenjdk-17 \
   jq \
   less \
   libffi \
   libffi-devel \
   libtool \
   lz4 \
+  mariadb \
   openssl \
   openssl-libs \
   openssl-devel \
   man-db \
-  moby-cli \
-  moby-engine \
-  msodbcsql17 \
-  mssql-tools \
-  mysql \
+  msodbcsql18 \
+  mssql-tools18 \
   nano \
   net-tools \
   parallel \
@@ -108,15 +94,18 @@ RUN tdnf update -y && bash ./tdnfinstall.sh \
   wget \
   which \
   zip \
-  zsh
-
-# Install Maven
-RUN tdnf update -y && bash ./tdnfinstall.sh maven
-
-RUN tdnf clean all
-
-# Additional packages required for Mariner to be closer to parity with CBL-D
-RUN tdnf update -y && bash ./tdnfinstall.sh \
+  zsh \
+  maven3 \
+  jx \
+  cf-cli \
+  golang \
+  ruby \
+  rubygems \
+  packer \
+  dcos-cli \
+  ripgrep \
+  helm \
+  azcopy \
   apparmor-parser \
   apparmor-utils \
   cronie \
@@ -130,68 +119,44 @@ RUN tdnf update -y && bash ./tdnfinstall.sh \
   procps \
   shared-mime-info \
   sysstat \
-  xauth
+  xauth \
+  screen \
+  postgresql-devel \
+  gh \
+  redis \
+  cpio \
+  gettext && \
+  tdnf clean all && \
+  rm -rf /var/cache/tdnf/*
 
-# Install azure-functions-core-tools
-RUN wget -nv -O Azure.Functions.Cli.linux-x64.4.0.3971.zip https://github.com/Azure/azure-functions-core-tools/releases/download/4.0.3971/Azure.Functions.Cli.linux-x64.4.0.3971.zip \
-  && unzip -d azure-functions-cli Azure.Functions.Cli.linux-x64.4.0.3971.zip \
-  && chmod +x azure-functions-cli/func \
-  && chmod +x azure-functions-cli/gozip \
-  && mv azure-functions-cli /opt \
-  && ln -sf /opt/azure-functions-cli/func /usr/bin/func \
-  && ln -sf /opt/azure-functions-cli/gozip /usr/bin/gozip \
-  && rm -r Azure.Functions.Cli.linux-x64.4.0.3971.zip
+ENV NPM_CONFIG_LOGLEVEL warn
+ENV NODE_ENV production
+ENV NODE_OPTIONS=--tls-cipher-list='ECDHE-RSA-AES128-GCM-SHA256:!RC4'
 
-# Install Jenkins X client
-RUN tdnf update -y && bash ./tdnfinstall.sh jx
-
-# Install CloudFoundry CLI
-RUN tdnf update -y && bash ./tdnfinstall.sh cf-cli
-
+# Get latest version of Terraform.
+# Customers require the latest version of Terraform.
+RUN TF_VERSION=$(curl -s https://checkpoint-api.hashicorp.com/v1/check/terraform | jq -r -M ".current_version") \
+  && wget -nv -O terraform.zip "https://releases.hashicorp.com/terraform/${TF_VERSION}/terraform_${TF_VERSION}_linux_amd64.zip" \
+  && wget -nv -O terraform.sha256 "https://releases.hashicorp.com/terraform/${TF_VERSION}/terraform_${TF_VERSION}_SHA256SUMS" \
+  && echo "$(grep "${TF_VERSION}_linux_amd64.zip" terraform.sha256 | awk '{print $1}')  terraform.zip" | sha256sum -c \
+  && unzip terraform.zip \
+  && mv terraform /usr/local/bin/terraform \
+  && rm -f terraform.zip terraform.sha256 \
+  && unset TF_VERSION
 
 # Setup locale to en_US.utf8
 RUN echo en_US UTF-8 >> /etc/locale.conf && locale-gen.sh
 ENV LANG="en_US.utf8"
 
-# Update pip and Install Service Fabric CLI
-# Install mssql-scripter
-RUN pip3 install --upgrade pip \
-  && pip3 install --upgrade sfctl \
-  && pip3 install --upgrade mssql-scripter
-
-# Install Blobxfer and Batch-Shipyard in isolated virtualenvs
-COPY ./linux/blobxfer /usr/local/bin
-RUN chmod 755 /usr/local/bin/blobxfer \
-  && pip3 install virtualenv \
-  && cd /opt \
-  && virtualenv -p python3 blobxfer \
-  && /bin/bash -c "source blobxfer/bin/activate && pip3 install blobxfer && deactivate"
-
-# Mariner distro required patch
-# mariner-batch-shipyard.patch
-# python3 is default in CBL-Mariner
-# Some hacks to install.sh install-tweaked.sh
-RUN curl -fSsL `curl -fSsL https://api.github.com/repos/Azure/batch-shipyard/releases/latest | grep tarball_url | cut -d'"' -f4` | tar -zxvpf - \
-  && mkdir /opt/batch-shipyard \
-  && mv Azure-batch-shipyard-*/* /opt/batch-shipyard \
-  && rm -r Azure-batch-shipyard-* \
-  && cd /opt/batch-shipyard \
-  && sed 's/rhel/mariner/' < install.sh > install-tweaked.sh \
-  && sed -i '/$PYTHON == /s/".*"/"python3"/' install-tweaked.sh \
-  && sed -i 's/rsync $PYTHON_PKGS/rsync python3-devel/' install-tweaked.sh \
-  && chmod +x ./install-tweaked.sh \
-  && ./install-tweaked.sh -c \
-  && /bin/bash -c "source cloudshell/bin/activate && python3 -m compileall -f /opt/batch-shipyard/shipyard.py /opt/batch-shipyard/convoy && deactivate" \
-  && ln -sf /opt/batch-shipyard/shipyard /usr/local/bin/shipyard
-
 # # BEGIN: Install Ansible in isolated Virtual Environment
 COPY ./linux/ansible/ansible*  /usr/local/bin/
 RUN chmod 755 /usr/local/bin/ansible* \
-  && pip3 install virtualenv \
   && cd /opt \
   && virtualenv -p python3 ansible \
-  && /bin/bash -c "source ansible/bin/activate && pip3 install ansible && pip3 install pywinrm\>\=0\.2\.2 && deactivate" \
-  && ansible-galaxy collection install azure.azcollection -p /usr/share/ansible/collections
+  && /bin/bash -c "source ansible/bin/activate && pip3 list --outdated --format=freeze | cut -d '=' -f1 | xargs -n1 pip3 install -U && pip3 install ansible && pip3 install pywinrm\>\=0\.2\.2 && deactivate" \
+  && rm -rf ~/.local/share/virtualenv/ \
+  && rm -rf ~/.cache/pip/ \
+  && ansible-galaxy collection install azure.azcollection --force -p /usr/share/ansible/collections
 
 # Install latest version of Istio
 ENV ISTIO_ROOT /usr/local/istio-latest
@@ -200,69 +165,16 @@ RUN curl -sSL https://git.io/getLatestIstio | sh - \
   && chmod -R 755 $ISTIO_ROOT
 ENV PATH $PATH:$ISTIO_ROOT/bin
 
-# Install latest version of Linkerd
-RUN export INSTALLROOT=/usr/local/linkerd \
-  && mkdir -p $INSTALLROOT \
-  && curl -sSL https://run.linkerd.io/install | sh - 
-ENV PATH $PATH:/usr/local/linkerd/bin
-
-# install go
-RUN bash ./tdnfinstall.sh \
-  golang
-
 ENV GOROOT="/usr/lib/golang"
-ENV PATH="$PATH:$GOROOT/bin:/opt/mssql-tools/bin"
+ENV PATH="$PATH:$GOROOT/bin:/opt/mssql-tools18/bin"
 
-# RUN export INSTALL_DIRECTORY="$GOROOT/bin" \
-#   && curl -sSL https://raw.githubusercontent.com/golang/dep/master/install.sh | sh \
-#   && ln -sf INSTALL_DIRECTORY/dep /usr/bin/dep \
-#   && unset INSTALL_DIRECTORY
-
-RUN tdnf update -y && bash ./tdnfinstall.sh \
-  ruby \
-  rubygems
-
-RUN gem install bundler --version 1.16.4 --force \
-  && gem install rake --version 12.3.0 --no-document --force \
-  && gem install colorize --version 0.8.1 --no-document --force \
-  && gem install rspec --version 3.7.0 --no-document --force
+RUN gem install bundler --no-document --clear-sources --force \
+  && bundle config set without 'development test' \
+  && gem install rake --no-document --clear-sources --force \
+  && gem install colorize --no-document --clear-sources --force \
+  && gem install rspec --no-document --clear-sources --force \
+  && rm -rf $(gem env gemdir)/cache/*.gem
 
 ENV GEM_HOME=~/bundle
 ENV BUNDLE_PATH=~/bundle
 ENV PATH=$PATH:$GEM_HOME/bin:$BUNDLE_PATH/gems/bin
-
-# Download and Install the latest packer (AMD64)
-RUN tdnf update -y && bash ./tdnfinstall.sh packer
-
-# Install dcos
-RUN tdnf update -y && bash ./tdnfinstall.sh dcos-cli
-
-# PowerShell telemetry
-ENV POWERSHELL_DISTRIBUTION_CHANNEL CloudShell
-# don't tell users to upgrade, they can't
-ENV POWERSHELL_UPDATECHECK Off
-
-# Install ripgrep
-RUN bash ./tdnfinstall.sh \
-  ripgrep
-
-# Install Helm
-RUN bash ./tdnfinstall.sh \
-  helm
-
-# Copy and run the Draft install script, which fetches the latest release of Draft with
-# optimizations for running inside cloud shell.
-COPY ./linux/draftInstall.sh .
-RUN bash ./draftInstall.sh && rm -f ./draftInstall.sh
-
-# Install Yeoman Generator and predefined templates
-RUN npm install -g yo \
-  && npm install -g generator-az-terra-module
-
-# Download and install AzCopy SCD of linux-x64
-RUN tdnf update -y && bash ./tdnfinstall.sh azcopy
-
-
-# Copy and run script to Install powershell modules
-COPY ./linux/powershell/ powershell
-RUN /usr/bin/pwsh -File ./powershell/setupPowerShell.ps1 -image Base && rm -rf ./powershell

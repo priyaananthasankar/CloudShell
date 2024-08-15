@@ -21,6 +21,10 @@ $script:CloudEnvironmentMap = @{
     dogfood = 'dogfood'
 }
 
+# For the Az.Tools.Predictor
+PSReadline\Set-PSReadLineOption -Colors @{ InLinePrediction = '#8d8d8d'}
+Microsoft.PowerShell.Core\Import-Module Az.Tools.Predictor -Force
+
 # Using the new set of az cmdlets
 Microsoft.PowerShell.Core\Import-Module Az.Accounts
 Az.Accounts\Enable-AzureRmAlias
@@ -369,19 +373,6 @@ finally
 
 # Set PSDefaultParameterValues for cmdlets
 $PSDefaultParameterValues = @{'Install-Module:Scope' = 'CurrentUser'; 'Install-Script:Scope' = 'CurrentUser'}
-
-#Initialize Microsoft.PowerShell.UnixCompleters module
-
-$startLoadingMicrosoftPowerShellUnixCompleters = [System.DateTime]::Now
-try
-{
-    Microsoft.PowerShell.Core\Import-Module -Name Microsoft.PowerShell.UnixCompleters -ErrorAction SilentlyContinue
-}
-finally
-{
-    Invoke-CloudShellTelemetry -LogLabel "LOADMicrosoftPowerShellUnixCompleters" -StartTime $startLoadingMicrosoftPowerShellUnixCompleters
-}
-#endregion
 
 #region Initialize AzurePSDrive
 

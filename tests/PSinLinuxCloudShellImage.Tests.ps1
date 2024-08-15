@@ -18,8 +18,8 @@ Describe "Various programs installed with expected versions" {
 
     It "Static Versions" {
         # These programs are installed explicitly with specific versions
-        $script:pmap["Node.JS"].Version | Should -Be '16.14.2'
-        $script:pmap["PowerShell"].Version | Should -BeLike '7.2*'        
+        $script:pmap["Node.JS"].Version | Should -Be '18.20.3'
+        $script:pmap["PowerShell"].Version | Should -BeLike '7.4*'
     }
 
     It "Some Versions Installed" {
@@ -58,7 +58,6 @@ Describe "Various programs installed with expected versions" {
             "python3m-config", 
             "x86_64-linux-gnu-python3-config", 
             "x86_64-linux-gnu-python3m-config",
-            "linkerd-stable.*",
             "pwsh-preview"
         )
 
@@ -113,10 +112,6 @@ Describe "PowerShell Modules" {
 
         $module = Get-InstalledModule -Name Az -AllVersions
         $module | Should -Not -BeNullOrEmpty
-
-        # Verify Az module version
-        $module.Version -ge [version]"5.0" | Should -Be $true
-
     }
 
     It "Az.Accounts PowerShell Module" {
@@ -166,15 +161,6 @@ Describe "PowerShell Modules" {
 
     }
 
-    It "EXOConnector PowerShell Module" {
-
-        $module = Get-Module -Name EXOPSSessionConnector -ListAvailable
-        $module | Should -Not -BeNullOrEmpty
-
-        # EXOPSSessionConnector module should have at least one command
-        (Get-Command * -Module EXOPSSessionConnector).Count -ge 1 | Should -Be $true        
-    }
-
     It "PowerBI PowerShell Module" {
 
         $module = Get-Module -Name MicrosoftPowerBIMgmt -ListAvailable
@@ -202,12 +188,6 @@ Describe "PowerShell Modules" {
         # MicrosoftTeams module should have at least one command
         (Get-Command * -Module MicrosoftTeams).Count -ge 1 | Should -Be $true        
     }
-
-    It "Microsoft.PowerShell.UnixCompleters PowerShell Module" {
-        $module = Get-Module -Name Microsoft.PowerShell.UnixCompleters -ListAvailable
-        $module | Should -Not -BeNullOrEmpty
-
-    }
     
     It "Microsoft.PowerShell.SecretManagement PowerShell Module" {
         
@@ -231,9 +211,7 @@ Describe "PowerShell Modules" {
         @{ ModuleName = "Az" }
         @{ ModuleName = "MicrosoftPowerBIMgmt" }
         @{ ModuleName = "GuestConfiguration" }
-        @{ ModuleName = "EXOPSSessionConnector" }
         @{ ModuleName = "MicrosoftTeams" }
-        @{ ModuleName = "Microsoft.PowerShell.UnixCompleters" }
         @{ ModuleName = "Microsoft.PowerShell.SecretManagement" }
         @{ ModuleName = "Microsoft.PowerShell.SecretStore" }
     )
