@@ -5,7 +5,7 @@ Azure Cloud Shell is an interactive, authenticated, browser-accessible shell for
 resources. As a web-based environment, Cloud Shell provides immediate management access to any
 device with a network connection. Azure Cloud Shell provides a
 [host of tools](https://docs.microsoft.com/azure/cloud-shell/features), including Azure CLI, Azure
-PowerShell, Ansible, Terraform, Puppet Bolt, kubectl, and many more.
+PowerShell, Ansible, Terraform, kubectl, and many more.
 
 For more details, check out
 [Overview of Azure Cloud Shell](https://docs.microsoft.com/azure/cloud-shell/overview).
@@ -23,10 +23,8 @@ Cloud Shell team respects and enjoys engaging with our customers, please share o
 ## About this repository
 
 When you connect to Azure Cloud Shell, we start a container hosting a wide variety of tools, and
-
 connect your browser to a shell process running inside that container. This repository contains the
 Docker files used to build that container image. It does _not_ contain the code used for the rest of
-
 the Azure Cloud Shell service. The code in this repository may not match exactly to what is running
 in the Cloud Shell service at any given time. The service is updated periodically and changes are
 gradually rolled out to different regions over time.
@@ -75,19 +73,15 @@ When building or using the image locally, you don't need to worry about that. Ju
 instructions below, and be aware that changes to the base layer will take longer to release than
 changes to the tools.
 
-| Layer        | Job           |
-| ---|---|
-| Base      | Contains large, infrequently changing packages. Changes every 3-4 months. |
-| Tools      | Contains frequently changing packages. Changes every 2-3 weeks |
+| Layer | Job                                                                       |
+|-------|---------------------------------------------------------------------------|
+| Base  | Contains large, infrequently changing packages. Changes every 3-4 months. |
+| Tools | Contains frequently changing packages. Changes every 2-3 weeks            |
+
 
 ## Building and Testing the image
 
 ### Building the images
-
-> [!NOTE]
-> Cloud Shell publishes an image on each update to the master branch. If you would like to use the pre-built image, then
-> you can skip this step by downloading the latest [base image layer here](ghcr.io/cloudshell/base:latest)
-> and the latest [tools image layer here](ghcr.io/cloudshell/tools:latest). You can find all previously built image layers [here](https://github.com/orgs/Azure/packages?repo_name=CloudShell).
 
 Required software:
 
@@ -97,13 +91,18 @@ Required software:
 Building base.Dockerfile image from the root repository
 
 ```bash
-docker build -t base_cloudshell -f linux/base.Dockerfile .
+docker build \
+   -t base_cloudshell \
+   -f linux/base.Dockerfile .
 ```
 
 Building tools.Dockerfile image
 
 ```bash
-docker build -t tools_cloudshell --build-arg IMAGE_LOCATION=base_cloudshell -f linux/tools.Dockerfile .
+docker build \
+   -t tools_cloudshell \
+   --build-arg IMAGE_LOCATION=base_cloudshell \
+   -f linux/tools.Dockerfile .
 ```
 
 ### Testing the images
@@ -123,7 +122,10 @@ docker run -it tools_cloudshell /usr/bin/pwsh
 Testing the Cloud Shell image:
 
 ```bash
-docker run --volume /path/to/CloudShell/folder/tests:/tests -it tools_cloudshell /tests/test.sh
+docker run \
+   --volume $(pwd)/tests:/tests \
+   -it tools_cloudshell \
+   /tests/test.sh
 ```
 
 For more information about bind mounts, please see the
@@ -134,49 +136,22 @@ to pass if you want your changes to be merged.
 
 ### Types of issues
 
-| Issue Type        | Action           |
-| ---|---|
-| Package is out of date      | Create a Pull Request or Issue |
-| New desired package     | Create a Pull Request or Issue |
-| New desired Cloud Shell feature | Create an [Discussion](https://github.com/Azure/CloudShell/discussions) |
-| Issue with one of the packages*     | Talk to package owner & create a PR on their repo.  |
-| Issue with how package interacts with Cloud Shell     | Create a Pull Request OR GitHub Issue |
-| Security bug | See https://www.microsoft.com/en-us/msrc/faqs-report-an-issue |
+| Issue Type                                                         | Action                                                                                                      |
+|--------------------------------------------------------------------|-------------------------------------------------------------------------------------------------------------|
+| Package is out of date                                             | Create a Pull Request or Issue                                                                              |
+| Add a package to my Cloud Shell                                    | Follow [Cloud Shell package addition](./docs/add-package-into-cloudshell.md)                                |
+| Add a package to everyone's Cloud Shell                            | Follow [Package Inclusion Guide](./docs/package-inclusion-guide.md)                                         |
+| New desired Cloud Shell feature                                    | Create an [Discussion](https://github.com/Azure/CloudShell/discussions)                                     |
+| Issue with one of the packages*                                    | Talk to package owner & create a PR on their repo.                                                          |
+| Issue with how package interacts with Cloud Shell                  | Create a Pull Request OR GitHub Issue                                                                       |
+| Security bug                                                       | See <https://www.microsoft.com/en-us/msrc/faqs-report-an-issue>                                             |
 | Issue with Cloud Shell in Azure Portal (can't log in, for example) | Open a [support ticket](https://learn.microsoft.com/azure/active-directory/fundamentals/how-to-get-support) |
 
-
-<sup>*</sup> For example, if you have an issue within Azure CLI, don't open up an issue in the Cloud Shell
+For example, if you have an issue within Azure CLI, don't open up an issue in the Cloud Shell
 repo, open an issue within the Azure CLI repo.
 
 - [Azure PowerShell issues](https://github.com/Azure/azure-powershell/issues)
 - [Azure CLI issues](https://github.com/Azure/azure-cli/issues)
-
-### Types of tools
-
-Cloud Shell aims to provide a core set of tools for Azure and Microsoft 365 devops scenarios, but we
-can't include everything. If you just want to use a tool yourself, you can install most utilities
-into your own home directory inside Cloud Shell. You only need to update the image if you want
-_every_ Cloud Shell admin to have the tool available.
-
-For a tool to be included in Cloud Shell, it has to be:
-
-- widely useful to Azure administrators
-- well-maintained and supported,
-- released under a license which permits us to include it
-- lightweight in terms of CPU requirements, size on disk, and memory
-
-Please:
-
-- support fetching tokens from Managed Identity if a tool authenticates to Azure services
-- add basic tests to the test suite run by GitHub Actions
-- consume the tools from the [Mariner package repo](https://packages.microsoft.com/cbl-mariner/2.0/)
-
-In general we avoid:
-
-- alpha, beta, preview or unstable versions of software.
-- tools primarily useful for extensive software development, as opposed to DevOps. Consider
-  [Visual Studio Codespaces](https://visualstudio.microsoft.com/services/visual-studio-codespaces/)
-  for that.
 
 ## Cloud Shell Documentation
 
